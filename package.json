@@ -1,0 +1,11 @@
+{
+  "name": "pst",
+  "version": "0.0.0",
+  "main": "server.js",
+  "private": true,
+  "dependencies": {
+    "stylus": "~0.37.0",
+    "nib": "~1.0.1",
+    "express": "~3.4.0"
+  }
+}

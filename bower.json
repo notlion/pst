@@ -1,0 +1,10 @@
+{
+  "name": "pst",
+  "version": "0.0.0",
+  "main": "server.js",
+  "private": true,
+  "dependencies": {
+    "polymer": "~0.0.20130912",
+    "codemirror": "~3.18.0"
+  }
+}

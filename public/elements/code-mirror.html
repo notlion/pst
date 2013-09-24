@@ -1,0 +1,39 @@
+<script src="/lib/bower_components/codemirror/lib/codemirror.js"></script>
+<script src="/lib/codemirror-glsl.js"></script>
+
+<polymer-element name="code-mirror" attributes="value">
+  <template>
+    <link rel="stylesheet" href="/lib/bower_components/codemirror/lib/codemirror.css">
+    <style>
+      @host {
+        * {
+          display: block;
+        }
+      }
+      .CodeMirror {
+        height: 100%;
+      }
+    </style>
+  </template>
+  <script>
+    Polymer('code-mirror', {
+      value: 'value',
+      created: function() {
+        this.mirror = CodeMirror(this.shadowRoot, {
+          value: this.value,
+          mode: 'glsl',
+          tabSize: 2,
+          lineNumbers: true,
+          dragDrop: false
+        });
+        this.mirror.on('change', this.changeHandler.bind(this));
+      },
+      changeHandler: function() {
+        this.value = this.mirror.getDoc().getValue();
+      },
+      refresh: function() {
+        this.mirror.refresh();
+      }
+    });
+  </script>
+</polymer-element>
