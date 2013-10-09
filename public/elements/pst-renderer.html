@@ -1,0 +1,21 @@
+<script src="/gen/renderer.js"></script>
+
+<polymer-element name="pst-renderer">
+  <template>
+    <style>
+      @host { * { display: block; } }
+      canvas {
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+    <canvas id="canvas"></canvas>
+  </template>
+  <script>
+    Polymer('pst-renderer', {
+      created: function() {
+        this.ctx = this.$.canvas.getContext('experimental-webgl');
+      }
+    });
+  </script>
+</polymer-element>

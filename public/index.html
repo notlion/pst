@@ -1,19 +1,18 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="utf-8">
     <script src="/lib/bower_components/polymer/polymer.min.js"></script>
-    <link rel="import" href="elements/code-mirror.html">
-    <style>
-      html, body {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-        background: #222;
-      }
-    </style>
+    <link rel="import" href="/elements/code-mirror.html">
+    <link rel="import" href="/elements/pst-renderer.html">
+    <link rel="stylesheet" href="/styles/index.css">
   </head>
   <body>
-    <code-mirror></code-mirror>
+    <div class="editor">
+      <code-mirror></code-mirror>
+    </div>
+    <div class="renderer">
+      <pst-renderer></pst-renderer>
+    </div>
   </body>
 </html>

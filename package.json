@@ -7,5 +7,9 @@
     "stylus": "~0.37.0",
     "nib": "~1.0.1",
     "express": "~3.4.0"
+  },
+  "devDependencies": {
+    "browserify": "~2.34.0",
+    "uglify-js": "~2.4.0"
   }
 }

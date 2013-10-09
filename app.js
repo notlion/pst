@@ -1,6 +1,8 @@
 var express = require('express');
 var http = require('http');
 var path = require('path');
+var stylus = require('stylus');
+var nib = require('nib');
 
 var app = express();
 
@@ -10,14 +12,14 @@ app.use(express.logger('dev'));
 app.use(express.bodyParser());
 app.use(express.methodOverride());
 app.use(app.router);
-app.use(require('stylus').middleware({
+app.use(stylus.middleware({
   src: path.join(__dirname, 'styles'),
-  dest: path.join(__dirname, 'public', 'styles'),
-  compile: function compile(str, path) {
+  dest: path.join(__dirname, 'public', 'styles', path.sep),
+  compile: function compile(str, pathName) {
     return stylus(str)
-      .set('filename', path)
+      .set('filename', pathName)
       .set('compress', true)
-      .use(require('nib')())
+      .use(nib())
       .import('nib');
   }
 }));

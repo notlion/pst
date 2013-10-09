@@ -1,0 +1,12 @@
+{
+  "name": "pst-renderer",
+  "version": "0.0.0",
+  "main": "index.js",
+  "author": "Ryan Alexander",
+  "dependencies": {
+    "gl-matrix": "~2.0.0"
+  },
+  "devDependencies": {
+    "exportify": "~0.1.0"
+  }
+}
