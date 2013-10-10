@@ -41,7 +41,7 @@ function glod() {
   this._mode              = -1;
   this._activeProgram     = null;
   this._contextLost       = false;
-  this._onContextLost     = this.onContextLost    .bind(this);
+  this._onContextLost     = this.onContextLost.bind(this);
   this._onContextRestored = this.onContextRestored.bind(this);
   this.loseContext        = null;
   this.restoreContext     = null;
@@ -201,8 +201,8 @@ glod.prototype.canvas = function(canvas) {
   }
 
   if (this.hasCanvas()) {
-    this._canvas.off('webglcontextlost',     this._onContextLost);
-    this._canvas.off('webglcontextrestored', this._onContextRestored);
+    this._canvas.removeEventListener('webglcontextlost', this._onContextLost);
+    this._canvas.removeEventListener('webglcontextrestored', this._onContextRestored);
   }
 
   this._canvas = canvas || null;
@@ -212,8 +212,8 @@ glod.prototype.canvas = function(canvas) {
   }
 
   if (this.hasCanvas()) {
-    this._canvas.on('webglcontextlost',     this._onContextLost);
-    this._canvas.on('webglcontextrestored', this._onContextRestored);
+    this._canvas.addEventListener('webglcontextlost', this._onContextLost);
+    this._canvas.addEventListener('webglcontextrestored', this._onContextRestored);
     var options = {antialias: false};
     var gl = this._canvas.getContext('webgl', options);
     gl || (gl = this._canvas.getContext('experimental-webgl', options));
@@ -230,7 +230,7 @@ glod.prototype.canvas = function(canvas) {
 };
 
 glod.prototype.hasCanvas = function() {
-  return !!(this._canvas && this._canvas.length == 1);
+  return !!(this._canvas); // && this._canvas.length == 1);
 };
 
 glod.prototype.hasVBO     = function(name) { return this._vbos    .hasOwnProperty(name); };
@@ -454,7 +454,9 @@ glod.prototype.createProgram = function(name) {
 glod.prototype.variable = function(name) {
   this.assertProgramActive()
   var variable = this._variables[this._activeProgram][name];
-  variable || die('glod.variable: variable not found: ' + name);
+  // TODO(ryan): Maybe add a flag for this? It can be useful to know when
+  // variables are unused, but also annoying if you want to set them regardless.
+  // variable || die('glod.variable: variable not found: ' + name);
   return variable;
 };
 
@@ -541,21 +543,12 @@ glod.prototype.viewport = function() {
     y = arguments[1];
     w = arguments[2];
     h = arguments[3];
-
-    gl.viewport(x, y, w, h);
-    gl.scissor(x, y, w, h);
-
-    return this;
   }
   else if (al === 0) {
     var canvas = this.canvas();
-
-    canvas.scale();
-
-    x = 0;
-    y = 0;
-    w = canvas.width();
-    h = canvas.height();
+    x = y = 0;
+    w = canvas.width;
+    h = canvas.height;
   }
   else {
     die('glod.viewport: bad argument count: ' + al);
@@ -622,6 +615,10 @@ glod.prototype.manual = function() {
 
 glod.prototype.value = function(name, a, b, c, d) {
   var v  = this.variable(name);
+
+  // Bail if the variable does not exist.
+  if (!v) return this;
+
   var gl = this.gl();
   var l  = arguments.length - 1;
   var loc = v.location;
@@ -632,25 +629,29 @@ glod.prototype.value = function(name, a, b, c, d) {
     l === 3 ? gl.vertexAttrib3f(loc, a, b, c   ) :
     l === 4 ? gl.vertexAttrib4f(loc, a, b, c, d) :
               die('glod.value: bad length: ' + l);
-  } else {
+  }
+  else {
     var type = v.info.type;
     l === 1 ? (v.float ? gl.uniform1f(loc, a         ) : gl.uniform1i(loc, a         )) :
     l === 2 ? (v.float ? gl.uniform2f(loc, a, b      ) : gl.uniform2i(loc, a, b      )) :
     l === 3 ? (v.float ? gl.uniform3f(loc, a, b, c   ) : gl.uniform3i(loc, a, b, c   )) :
     l === 4 ? (v.float ? gl.uniform4f(loc, a, b, c, d) : gl.uniform4i(loc, a, b, c, d)) :
-               die('glod.value: bad length: ' + l);
+              die('glod.value: bad length: ' + l);
   }
   v.ready = true;
   return this;
 };
 
 glod.prototype.valuev = function(name, s, transpose) {
-  var v = this.variable(name);
-
-  var l = v.count;
   s || die('glod.valuev: bad vector: ' + s);
 
+  var v = this.variable(name);
+
+  // Bail if the variable does not exist.
+  if (!v) return this;
+
   var gl = this.gl();
+  var l = v.count;
   var loc = v.location;
 
   if (v.attrib) {
@@ -661,13 +662,15 @@ glod.prototype.valuev = function(name, s, transpose) {
     l === 3 ? gl.vertexAttrib3fv(loc, s) :
     l === 4 ? gl.vertexAttrib4fv(loc, s) :
               die('glod.valuev: bad length: ' + l);
-  } else {
+  }
+  else {
     if (v.matrix) {
       l === 4  ? gl.uniformMatrix2fv(loc, !!transpose, s) :
       l === 9  ? gl.uniformMatrix3fv(loc, !!transpose, s) :
       l === 16 ? gl.uniformMatrix4fv(loc, !!transpose, s) :
                  die('glod.valuev: bad length: ' + l);
-    } else {
+    }
+    else {
       l === 1 ? (v.float ? gl.uniform1fv(loc, s) : gl.uniform1iv(loc, s)) :
       l === 2 ? (v.float ? gl.uniform2fv(loc, s) : gl.uniform2iv(loc, s)) :
       l === 3 ? (v.float ? gl.uniform3fv(loc, s) : gl.uniform3iv(loc, s)) :

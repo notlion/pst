@@ -14,7 +14,15 @@
   <script>
     Polymer('pst-renderer', {
       created: function() {
-        this.ctx = this.$.canvas.getContext('experimental-webgl');
+        var PstRenderer = require('./renderer/index.js');
+        var renderer = this.renderer = new PstRenderer();
+        renderer.canvas = this.$.canvas;
+        renderer.init();
+        function step() {
+          requestAnimationFrame(step);
+          renderer.step();
+        }
+        requestAnimationFrame(step);
       }
     });
   </script>

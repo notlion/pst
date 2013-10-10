@@ -4,6 +4,7 @@ uglify = ./node_modules/uglify-js/bin/uglifyjs
 gen = public/gen
 
 $(gen)/renderer.js:
+	cd ./renderer && make
 	$(browserify) -r ./renderer/index.js > $(gen)/renderer.js
 
 minify: $(gen)/renderer.js
@@ -11,3 +12,4 @@ minify: $(gen)/renderer.js
 
 clean:
 	rm -rf $(gen)/*.js
+	cd ./renderer && make clean

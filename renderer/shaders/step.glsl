@@ -4,17 +4,20 @@ precision highp float;
 precision highp int;
 
 uniform float side;
-uniform float elapsed;
+uniform float time;
+uniform float count;
 
 #define PI  3.141592653589793
 #define TAU 6.283185307179586
 
 // Pseudo-random value [0, 1] at vec2 {p}, {x, y}, or {x}
+// TODO: Replace with texture lookup.
 float rand(vec2 p          ) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
 float rand(float x, float y) { return rand(vec2(x, y));                                       }
 float rand(float x)          { return rand(vec2(x, 0.));                                      }
 
 // Pseudo-random point on the unit-sphere
+// TODO: Replace with texture lookup.
 vec3 rand3(vec2 p) {
   float phi = rand(p) * PI * 2.;
   float ct = rand(p.yx) * 2. - 1.;
@@ -35,11 +38,21 @@ void main() {
 
 //!fragment
 
+struct PrevPoint {
+  vec4 pos;
+  vec4 color;
+};
+struct Point {
+  vec4 pos;
+  vec4 color;
+  PrevPoint prev;
+} point;
+
 void main() {
   float index = gl_FragCoord.x + gl_FragCoord.y * side;
   vec2 uv = gl_FragCoord.xy / side;
-	//gl_FragColor = vec4(uv, 1.0, 1.0);
-	gl_FragColor = vec4(rand3(index), 1.);
-  gl_FragColor.xyz *= cos(elapsed) + 2.;
-	//gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+
+  point.pos = vec4(rand3(index / count + time), 1.);
+
+  gl_FragColor = point.pos;
 }

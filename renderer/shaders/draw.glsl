@@ -3,9 +3,9 @@
 precision highp float;
 precision highp int;
 
-uniform float side;
 uniform sampler2D position;
 uniform mat4 transform;
+uniform float side;
 
 //!vertex
 
@@ -20,5 +20,5 @@ void main() {
 //!fragment
 
 void main() {
-	gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+  gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
 }
