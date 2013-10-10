@@ -31,7 +31,7 @@ Object.defineProperties(PstRenderer.prototype, {
     },
     set: function(src) {
       this._shaderSrc = src;
-      this.compile();
+      this._shaderSrcDirty = true;
     }
   }
 });
@@ -133,8 +133,4 @@ PstRenderer.prototype.step = function() {
       .points()
       .drawArrays(0, this._count)
     .end();
-};
-
-PstRenderer.prototype.compile = function() {
-  // Something;
 };

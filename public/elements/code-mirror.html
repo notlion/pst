@@ -13,7 +13,7 @@
   </template>
   <script>
     Polymer('code-mirror', {
-      value: 'value',
+      value: '',
       created: function() {
         this.mirror = CodeMirror(this.shadowRoot, {
           value: this.value,
@@ -28,6 +28,9 @@
       },
       changeHandler: function() {
         this.value = this.mirror.getDoc().getValue();
+      },
+      valueChanged: function() {
+        this.fire('valuechange', this.value);
       },
       refresh: function() {
         this.mirror.refresh();

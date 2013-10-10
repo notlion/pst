@@ -52,7 +52,7 @@ void main() {
   float index = gl_FragCoord.x + gl_FragCoord.y * side;
   vec2 uv = gl_FragCoord.xy / side;
 
-  point.pos = vec4(rand3(index / count + time), 1.);
+  //{{shaderSrc}}
 
   gl_FragColor = point.pos;
 }

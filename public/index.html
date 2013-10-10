@@ -9,10 +9,24 @@
   </head>
   <body>
     <div class="editor">
-      <code-mirror></code-mirror>
+      <code-mirror
+        value="point.pos = vec4(rand3(index / count + time), 1.);">
+      </code-mirror>
     </div>
     <div class="renderer">
       <pst-renderer></pst-renderer>
     </div>
+    <script>
+      (function() {
+        var cm = document.querySelector('code-mirror');
+        cm.addEventListener('valuechange', onShaderSrcChange);
+
+        var renderer = document.querySelector('pst-renderer');
+
+        function onShaderSrcChange(shaderSrc) {
+          renderer.shader = shaderSrc;
+        }
+      }());
+    </script>
   </body>
 </html>

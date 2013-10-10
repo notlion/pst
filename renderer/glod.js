@@ -106,7 +106,7 @@ glod.preprocess = function(source) {
   var o = {
     name:     name,
     vertex:   vertex_src,
-    fragment: fragment_src,
+    fragment: fragment_src
   };
 
   glod.preprocessed[o.name] && die('glod: duplicate shader name: '+ o.name);

@@ -1,6 +1,6 @@
 <script src="/gen/renderer.js"></script>
 
-<polymer-element name="pst-renderer">
+<polymer-element name="pst-renderer" attributes="shader">
   <template>
     <style>
       @host { * { display: block; } }
@@ -13,6 +13,7 @@
   </template>
   <script>
     Polymer('pst-renderer', {
+      shader: '',
       created: function() {
         var PstRenderer = require('./renderer/index.js');
         var renderer = this.renderer = new PstRenderer();
@@ -23,6 +24,9 @@
           renderer.step();
         }
         requestAnimationFrame(step);
+      },
+      shaderChanged: function() {
+        this.renderer.shader = this.shader;
       }
     });
   </script>
