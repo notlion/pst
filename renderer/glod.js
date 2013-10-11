@@ -1,30 +1,36 @@
 'use strict';
 
-module.exports = glod;
+module.exports = Glod;
 
-function die() {
-  var message = Array.prototype.slice.call(arguments).join(' ');
+function GlodError(message, data) {
+  Error.call(this, message);
+  this.data = data;
+}
+GlodError.prototype = Object.create(Error.prototype);
 
-  var error;
-  try {
-    throw new Error(message || 'die');
-  }
-  catch(e) {
-    error = e;
-  }
+function die(message, data) {
+  var error = new GlodError(message || 'Glod: die', data);
 
-  var line   = error.stack.split('\n')[3];
-  var at     = line.indexOf('at ');
-  var origin = line.slice(at + 3, line.length);
+  // try {
+  //   throw new Error(message || 'die');
+  // }
+  // catch(err) {
+  //   error = err;
+  // }
 
-  error.name = 'at ' + origin;
+  // var line = error.stack.split('\n')[3];
+  // var at = line.indexOf('at ');
+  // var origin = line.slice(at + 3, line.length);
+
+  // error.name = 'at ' + origin;
 
   throw error;
 }
 
-function glod() {
-  if (!glod.prototype.isPrototypeOf(this)) {
-    return glod.apply(Object.create(glod.prototype), arguments);
+function Glod() {
+  // Allow instantiation without new.
+  if (!Glod.prototype.isPrototypeOf(this)) {
+    die('Glod: instantiate with `new Glod()`')
   }
 
   this._canvas            = null;
@@ -53,14 +59,12 @@ function glod() {
   this._optionalv = {};
 
   this._state = 0;
-
-  return this;
 }
 
-glod.preprocessed = {};
+Glod.preprocessed = {};
 
 // this should probably be called "cache shader" or something like that
-glod.preprocess = function(source) {
+Glod.preprocess = function(source) {
   var line_re      = /\n|\r/;
   var directive_re = /^\/\/!\s*(.*)$/;
 
@@ -109,25 +113,25 @@ glod.preprocess = function(source) {
     fragment: fragment_src
   };
 
-  glod.preprocessed[o.name] && die('glod: duplicate shader name: '+ o.name);
-  glod.preprocessed[o.name] = o;
+  Glod.preprocessed[o.name] && die('Glod: duplicate shader name: '+ o.name);
+  Glod.preprocessed[o.name] = o;
 };
 
-glod.prototype.isInactive      = function() { return this._state === 0;     };
-glod.prototype.isPreparing     = function() { return this._state === 1;     };
-glod.prototype.isDrawing       = function() { return this._state === 2;     };
-glod.prototype.isProgramActive = function() { return !!this._activeProgram; };
+Glod.prototype.isInactive      = function() { return this._state === 0;     };
+Glod.prototype.isPreparing     = function() { return this._state === 1;     };
+Glod.prototype.isDrawing       = function() { return this._state === 2;     };
+Glod.prototype.isProgramActive = function() { return !!this._activeProgram; };
 
-glod.prototype.startInactive  = function() { this._state = 0; return this; };
-glod.prototype.startPreparing = function() { this._state = 1; return this; };
-glod.prototype.startDrawing   = function() { this._state = 2; return this; };
+Glod.prototype.startInactive  = function() { this._state = 0; return this; };
+Glod.prototype.startPreparing = function() { this._state = 1; return this; };
+Glod.prototype.startDrawing   = function() { this._state = 2; return this; };
 
-glod.prototype.assertInactive      = function() { this.isInactive()      || this.outOfPhase(0); return this; };
-glod.prototype.assertPreparing     = function() { this.isPreparing()     || this.outOfPhase(1); return this; };
-glod.prototype.assertDrawing       = function() { this.isDrawing()       || this.outOfPhase(2); return this; };
-glod.prototype.assertProgramActive = function() { this.isProgramActive() || this.outOfPhase(1); return this; };
+Glod.prototype.assertInactive      = function() { this.isInactive()      || this.outOfPhase(0); return this; };
+Glod.prototype.assertPreparing     = function() { this.isPreparing()     || this.outOfPhase(1); return this; };
+Glod.prototype.assertDrawing       = function() { this.isDrawing()       || this.outOfPhase(2); return this; };
+Glod.prototype.assertProgramActive = function() { this.isProgramActive() || this.outOfPhase(1); return this; };
 
-glod.prototype.outOfPhase = function(expected, actual) {
+Glod.prototype.outOfPhase = function(expected, actual) {
   function s(n) {
     return n === 0 ? 'inactive'  :
            n === 1 ? 'preparing' :
@@ -135,7 +139,7 @@ glod.prototype.outOfPhase = function(expected, actual) {
                      'unknown (' + n + ')';
   }
 
-  die('glod: out of phase: expected to be ' + s(expected) + ' but was ' + s(this._state));
+  die('Glod: out of phase: expected to be ' + s(expected) + ' but was ' + s(this._state));
 };
 
 
@@ -164,7 +168,7 @@ glod.prototype.outOfPhase = function(expected, actual) {
 // }
 
 
-glod.prototype.initContext = function() {
+Glod.prototype.initContext = function() {
   var gl = this._gl;
 
   var supported = gl.getSupportedExtensions();
@@ -180,23 +184,23 @@ glod.prototype.initContext = function() {
   this.restoreContext = lc.restoreContext.bind(lc);
 };
 
-glod.prototype.gl = function() {
-  this._gl || die('glod.gl: no gl context');
+Glod.prototype.gl = function() {
+  this._gl || die('Glod.gl: no gl context');
   return this._gl;
 };
 
-glod.prototype.extension = function() {
+Glod.prototype.extension = function() {
   var l = arguments.length;
   for (var i = 0; i < l; i++) {
     var e = this._extensions[arguments[i]];
     if (e) return e;
   }
-  die('glod.extension: extension not found: ' + arguments);
+  die('Glod.extension: extension not found: ' + arguments);
 };
 
-glod.prototype.canvas = function(canvas) {
+Glod.prototype.canvas = function(canvas) {
   if (arguments.length === 0) {
-    this.hasCanvas() || die('glod.canvas: no canvas');
+    this.hasCanvas() || die('Glod.canvas: no canvas');
     return this._canvas;
   }
 
@@ -208,7 +212,7 @@ glod.prototype.canvas = function(canvas) {
   this._canvas = canvas || null;
 
   if (canvas && !this.hasCanvas()) {
-    die('glod.canvas: bad canvas: ' + canvas);
+    die('Glod.canvas: bad canvas: ' + canvas);
   }
 
   if (this.hasCanvas()) {
@@ -217,7 +221,7 @@ glod.prototype.canvas = function(canvas) {
     var options = {antialias: false};
     var gl = this._canvas.getContext('webgl', options);
     gl || (gl = this._canvas.getContext('experimental-webgl', options));
-    gl || (die('glod.canvas: failed to create context'));
+    gl || (die('Glod.canvas: failed to create context'));
     // wrap && (gl = WebGLDebugUtils.makeDebugContext(gl, throwOnGLError, logAndValidate));
     this._gl = gl;
     this.initContext();
@@ -229,41 +233,41 @@ glod.prototype.canvas = function(canvas) {
   return this;
 };
 
-glod.prototype.hasCanvas = function() {
+Glod.prototype.hasCanvas = function() {
   return !!(this._canvas); // && this._canvas.length == 1);
 };
 
-glod.prototype.hasVBO     = function(name) { return this._vbos    .hasOwnProperty(name); };
-glod.prototype.hasFBO     = function(name) { return this._fbos    .hasOwnProperty(name); };
-glod.prototype.hasRBO     = function(name) { return this._rbos    .hasOwnProperty(name); };
-glod.prototype.hasTexture = function(name) { return this._textures.hasOwnProperty(name); };
-glod.prototype.hasProgram = function(name) { return this._programs.hasOwnProperty(name); };
+Glod.prototype.hasVBO     = function(name) { return this._vbos    .hasOwnProperty(name); };
+Glod.prototype.hasFBO     = function(name) { return this._fbos    .hasOwnProperty(name); };
+Glod.prototype.hasRBO     = function(name) { return this._rbos    .hasOwnProperty(name); };
+Glod.prototype.hasTexture = function(name) { return this._textures.hasOwnProperty(name); };
+Glod.prototype.hasProgram = function(name) { return this._programs.hasOwnProperty(name); };
 
-glod.prototype.createVBO = function(name) {
-  this.hasVBO(name) && die('glod.createVBO: duplicate name: ' + name);
+Glod.prototype.createVBO = function(name) {
+  this.hasVBO(name) && die('Glod.createVBO: duplicate name: ' + name);
   this._vbos[name] = this.gl().createBuffer();
   return this;
 };
 
-glod.prototype.createFBO = function(name) {
-  this.hasFBO(name) && die('glod.createFBO: duplicate resource name: ' + name);
+Glod.prototype.createFBO = function(name) {
+  this.hasFBO(name) && die('Glod.createFBO: duplicate resource name: ' + name);
   this._fbos[name] = this.gl().createFramebuffer();
   return this;
 };
 
-glod.prototype.createRBO = function(name) {
-  this.hasRBO(name) && die('glod.createRBO: duplicate resource name: ' + name);
+Glod.prototype.createRBO = function(name) {
+  this.hasRBO(name) && die('Glod.createRBO: duplicate resource name: ' + name);
   this._rbos[name] = this.gl().createRenderbuffer();
   return this;
 };
 
-glod.prototype.createTexture = function(name) {
-  this.hasTexture(name) && die('glod.createTexture: duplicate resource name: ' + name);
+Glod.prototype.createTexture = function(name) {
+  this.hasTexture(name) && die('Glod.createTexture: duplicate resource name: ' + name);
   this._textures[name] = this.gl().createTexture();
   return this;
 };
 
-glod.prototype.deleteVBO = function(name) {
+Glod.prototype.deleteVBO = function(name) {
   var vbo = this.vbo(name);
   this.gl().deleteBuffer(vbo);
   delete this._vbos[name];
@@ -271,27 +275,27 @@ glod.prototype.deleteVBO = function(name) {
 };
 
 var NRF = function(type, name) {
-  die('glod.' + type + ': no resource found: ' + name);
+  die('Glod.' + type + ': no resource found: ' + name);
 };
 
-glod.prototype.vbo     = function(name) { this.hasVBO(name) || NRF('vbo', name); return this._vbos[name]; };
-glod.prototype.fbo     = function(name) { this.hasFBO(name) || NRF('fbo', name); return this._fbos[name]; };
-glod.prototype.rbo     = function(name) { this.hasRBO(name) || NRF('rbo', name); return this._rbos[name]; };
+Glod.prototype.vbo     = function(name) { this.hasVBO(name) || NRF('vbo', name); return this._vbos[name]; };
+Glod.prototype.fbo     = function(name) { this.hasFBO(name) || NRF('fbo', name); return this._fbos[name]; };
+Glod.prototype.rbo     = function(name) { this.hasRBO(name) || NRF('rbo', name); return this._rbos[name]; };
 
-glod.prototype.program = function(name) {
+Glod.prototype.program = function(name) {
   this.hasProgram(name) || NRF('program', name); return this._programs[name];
 };
 
-glod.prototype.texture = function(name) {
+Glod.prototype.texture = function(name) {
   this.hasTexture(name) || NRF('texture', name); return this._textures[name];
 };
 
-glod.prototype.onContextLost = function(e) {
+Glod.prototype.onContextLost = function(e) {
   e.preventDefault();
   this._contextLost = true;
 };
 
-glod.prototype.onContextRestored = function(e) {
+Glod.prototype.onContextRestored = function(e) {
   this._contextLost = false;
 
   var name;
@@ -306,21 +310,21 @@ glod.prototype.onContextRestored = function(e) {
   this._versionedIds = {};
 };
 
-glod.prototype.createProgram = function(name) {
+Glod.prototype.createProgram = function(name) {
   name || die('bad program name: ' + name);
 
-  var o = glod.preprocessed[name];
+  var o = Glod.preprocessed[name];
 
-  o          || die('glod.createProgram: program not preprocessed: ' + name);
-  o.name     || die('glod.createProgram: no name specified');
-  o.vertex   || die('glod.createProgram: no vertex source');
-  o.fragment || die('glod.createProgram: no fragment source');
+  o          || die('Glod.createProgram: program not preprocessed: ' + name);
+  o.name     || die('Glod.createProgram: no name specified');
+  o.vertex   || die('Glod.createProgram: no vertex source');
+  o.fragment || die('Glod.createProgram: no fragment source');
 
   name             = o.name;
   var vertex_src   = o.vertex;
   var fragment_src = o.fragment;
 
-  this.hasProgram(name) && die('glod.createProgram: duplicate program name: ' + name);
+  this.hasProgram(name) && die('Glod.createProgram: duplicate program name: ' + name);
 
   var gl = this.gl();
   var program = gl.createProgram();
@@ -333,8 +337,9 @@ glod.prototype.createProgram = function(name) {
     gl.compileShader(s);
 
     if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
-      console.log(gl.getShaderInfoLog(s));
-      die('glod.createProgram: compilation failed');
+      var log = gl.getShaderInfoLog(s);
+      console.log(log);
+      die('Glod.createProgram: compilation failed', log);
     }
 
     gl.attachShader(program, s);
@@ -348,13 +353,13 @@ glod.prototype.createProgram = function(name) {
 
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
       console.log(gl.getProgramInfoLog(program));
-      die('glod.createProgram: linking failed');
+      die('Glod.createProgram: linking failed');
     }
 
     gl.validateProgram(program);
     if (!gl.getProgramParameter(program, gl.VALIDATE_STATUS)) {
       console.log(gl.getProgramInfoLog(program));
-      die('glod.createProgram: validation failed');
+      die('Glod.createProgram: validation failed');
     }
 
     if (pass === 0) {
@@ -370,7 +375,7 @@ glod.prototype.createProgram = function(name) {
       }
 
       var layout = active.sort(function(a, b) { return a[1] > b[1]; })
-                         .map (function(x   ) { return x[0]       ; });
+                         .map (function(x   ) { return x[0];        });
 
       for (var i = 0; i < layout.length; i++) {
         gl.bindAttribLocation(program, i, layout[i]);
@@ -387,7 +392,7 @@ glod.prototype.createProgram = function(name) {
 
       var name = info.name;
 
-      variables[name] && die('glod: duplicate variable name: ' + name);
+      variables[name] && die('Glod: duplicate variable name: ' + name);
 
       var location = attrib ? gl.getAttribLocation (program, name) :
                               gl.getUniformLocation(program, name) ;
@@ -420,7 +425,7 @@ glod.prototype.createProgram = function(name) {
                   type === gl.FLOAT_MAT2     ? 4  :
                   type === gl.FLOAT_MAT3     ? 9  :
                   type === gl.FLOAT_MAT4     ? 16 :
-                  die('glod: unknown variable type: ' + type);
+                  die('Glod: unknown variable type: ' + type);
 
       var matrix = type === gl.FLOAT_MAT2 || type === gl.FLOAT_MAT3 || type === gl.FLOAT_MAT4;
 
@@ -451,20 +456,20 @@ glod.prototype.createProgram = function(name) {
   return this;
 };
 
-glod.prototype.variable = function(name) {
+Glod.prototype.variable = function(name) {
   this.assertProgramActive()
   var variable = this._variables[this._activeProgram][name];
   // TODO(ryan): Maybe add a flag for this? It can be useful to know when
   // variables are unused, but also annoying if you want to set them regardless.
-  // variable || die('glod.variable: variable not found: ' + name);
+  // variable || die('Glod.variable: variable not found: ' + name);
   return variable;
 };
 
-glod.prototype.location = function(name) { return this.variable(name).location; };
-glod.prototype.info     = function(name) { return this.variable(name).info;     };
-glod.prototype.isAttrib = function(name) { return this.variable(name).attrib;   };
+Glod.prototype.location = function(name) { return this.variable(name).location; };
+Glod.prototype.info     = function(name) { return this.variable(name).info;     };
+Glod.prototype.isAttrib = function(name) { return this.variable(name).attrib;   };
 
-glod.prototype.uploadCCWQuad = function() {
+Glod.prototype.uploadCCWQuad = function() {
   var positions = new Float32Array([1, -1, 0, 1, 1, 1, 0, 1, -1, 1, 0, 1, -1, 1, 0, 1, -1, -1, 0, 1, 1, -1, 0, 1]);
 
   return function(name) {
@@ -475,7 +480,7 @@ glod.prototype.uploadCCWQuad = function() {
   };
 }();
 
-glod.prototype.uploadPlaceholderTexture = function() {
+Glod.prototype.uploadPlaceholderTexture = function() {
   var rgba = new Uint8Array([255, 255, 255, 255, 0, 255, 255, 255, 255, 0, 255, 255, 255, 255, 0, 255]);
 
   return function(name) {
@@ -493,7 +498,7 @@ glod.prototype.uploadPlaceholderTexture = function() {
   };
 }();
 
-glod.prototype.bindFramebuffer = function(name) {
+Glod.prototype.bindFramebuffer = function(name) {
   var fbo = name === null ? null : this.fbo(name);
   var gl = this.gl();
   gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
@@ -505,7 +510,7 @@ glod.prototype.bindFramebuffer = function(name) {
 //   use the vbo's type to determine which target to bind it to
 //   support stream and dynamic draw
 //   support passing a normal JS array
-glod.prototype.bufferDataStatic = function(targetName) {
+Glod.prototype.bufferDataStatic = function(targetName) {
   var al  = arguments.length;
   var gl  = this.gl();
   var vbo = this.vbo(targetName);
@@ -524,7 +529,7 @@ glod.prototype.bufferDataStatic = function(targetName) {
     gl.bufferSubData(gl.ARRAY_BUFFER, a, arguments[2]);
   }
   else {
-    die('glod.bufferData: bad argument count: ' + al);
+    die('Glod.bufferData: bad argument count: ' + al);
   }
 
   return this;
@@ -533,7 +538,7 @@ glod.prototype.bufferDataStatic = function(targetName) {
 // todo:
 //   support aperture base and opening
 //   support scale factor
-glod.prototype.viewport = function() {
+Glod.prototype.viewport = function() {
   var gl = this.gl();
   var x, y, w, h;
 
@@ -551,7 +556,7 @@ glod.prototype.viewport = function() {
     h = canvas.height;
   }
   else {
-    die('glod.viewport: bad argument count: ' + al);
+    die('Glod.viewport: bad argument count: ' + al);
   }
 
   gl.viewport(x, y, w, h);
@@ -560,7 +565,7 @@ glod.prototype.viewport = function() {
   return this;
 }
 
-glod.prototype.begin = function(programName) {
+Glod.prototype.begin = function(programName) {
   this.assertInactive().startPreparing();
 
   this.gl().useProgram(this.program(programName));
@@ -577,7 +582,7 @@ glod.prototype.begin = function(programName) {
   return this;
 };
 
-glod.prototype.ready = function() {
+Glod.prototype.ready = function() {
   this.assertPreparing().startDrawing();
 
   var variables = this._variables[this._activeProgram];
@@ -593,19 +598,19 @@ glod.prototype.ready = function() {
       }
     }
 
-    variables[name].ready || die('glod.ready: variable not ready: ' + name);
+    variables[name].ready || die('Glod.ready: variable not ready: ' + name);
   }
 
   return this;
 };
 
-glod.prototype.end = function() {
+Glod.prototype.end = function() {
   this.assertDrawing().startInactive();
   this._activeProgram = null;
   return this;
 };
 
-glod.prototype.manual = function() {
+Glod.prototype.manual = function() {
   this.assertProgramActive();
   for (var i = 0; i < arguments.length; i++) {
     this.variable(arguments[i]).ready = true;
@@ -613,7 +618,7 @@ glod.prototype.manual = function() {
   return this;
 };
 
-glod.prototype.value = function(name, a, b, c, d) {
+Glod.prototype.value = function(name, a, b, c, d) {
   var v  = this.variable(name);
 
   // Bail if the variable does not exist.
@@ -628,7 +633,7 @@ glod.prototype.value = function(name, a, b, c, d) {
     l === 2 ? gl.vertexAttrib2f(loc, a, b      ) :
     l === 3 ? gl.vertexAttrib3f(loc, a, b, c   ) :
     l === 4 ? gl.vertexAttrib4f(loc, a, b, c, d) :
-              die('glod.value: bad length: ' + l);
+              die('Glod.value: bad length: ' + l);
   }
   else {
     var type = v.info.type;
@@ -636,14 +641,14 @@ glod.prototype.value = function(name, a, b, c, d) {
     l === 2 ? (v.float ? gl.uniform2f(loc, a, b      ) : gl.uniform2i(loc, a, b      )) :
     l === 3 ? (v.float ? gl.uniform3f(loc, a, b, c   ) : gl.uniform3i(loc, a, b, c   )) :
     l === 4 ? (v.float ? gl.uniform4f(loc, a, b, c, d) : gl.uniform4i(loc, a, b, c, d)) :
-              die('glod.value: bad length: ' + l);
+              die('Glod.value: bad length: ' + l);
   }
   v.ready = true;
   return this;
 };
 
-glod.prototype.valuev = function(name, s, transpose) {
-  s || die('glod.valuev: bad vector: ' + s);
+Glod.prototype.valuev = function(name, s, transpose) {
+  s || die('Glod.valuev: bad vector: ' + s);
 
   var v = this.variable(name);
 
@@ -655,27 +660,27 @@ glod.prototype.valuev = function(name, s, transpose) {
   var loc = v.location;
 
   if (v.attrib) {
-    l === s.length || die('glod.valuev: bad vector length: ' + s.length);
+    l === s.length || die('Glod.valuev: bad vector length: ' + s.length);
     gl.disableVertexAttribArray(loc);
     l === 1 ? gl.vertexAttrib1fv(loc, s) :
     l === 2 ? gl.vertexAttrib2fv(loc, s) :
     l === 3 ? gl.vertexAttrib3fv(loc, s) :
     l === 4 ? gl.vertexAttrib4fv(loc, s) :
-              die('glod.valuev: bad length: ' + l);
+              die('Glod.valuev: bad length: ' + l);
   }
   else {
     if (v.matrix) {
       l === 4  ? gl.uniformMatrix2fv(loc, !!transpose, s) :
       l === 9  ? gl.uniformMatrix3fv(loc, !!transpose, s) :
       l === 16 ? gl.uniformMatrix4fv(loc, !!transpose, s) :
-                 die('glod.valuev: bad length: ' + l);
+                 die('Glod.valuev: bad length: ' + l);
     }
     else {
       l === 1 ? (v.float ? gl.uniform1fv(loc, s) : gl.uniform1iv(loc, s)) :
       l === 2 ? (v.float ? gl.uniform2fv(loc, s) : gl.uniform2iv(loc, s)) :
       l === 3 ? (v.float ? gl.uniform3fv(loc, s) : gl.uniform3iv(loc, s)) :
       l === 4 ? (v.float ? gl.uniform4fv(loc, s) : gl.uniform4iv(loc, s)) :
-                die('glod.valuev: bad length: ' + l);
+                die('Glod.valuev: bad length: ' + l);
     }
   }
 
@@ -684,7 +689,7 @@ glod.prototype.valuev = function(name, s, transpose) {
   return this;
 };
 
-glod.prototype.optional = function(name, a, b, c, d) {
+Glod.prototype.optional = function(name, a, b, c, d) {
   var l = arguments.length - 1;
 
   if (l === 1 && a === undefined) {
@@ -706,7 +711,7 @@ glod.prototype.optional = function(name, a, b, c, d) {
   return this;
 };
 
-glod.prototype.optionalv = function(name, s, transpose) {
+Glod.prototype.optionalv = function(name, s, transpose) {
   // WARNING: I'm not sure this actually works.
   if (arguments.length === 2 && s === undefined) {
     delete this._optionalv[name];
@@ -725,13 +730,13 @@ glod.prototype.optionalv = function(name, s, transpose) {
   return this;
 };
 
-glod.prototype.pack = function(vboName) {
+Glod.prototype.pack = function(vboName) {
   var vbo = this.vbo(vboName);
   var gl  = this.gl();
 
   gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
 
-  arguments.length < 2 && die('glod.pack: no attribute provided');
+  arguments.length < 2 && die('Glod.pack: no attribute provided');
 
   var stride = 0;
   var counts = [];
@@ -739,8 +744,8 @@ glod.prototype.pack = function(vboName) {
   for (var i = 1; i < arguments.length; i++) {
     var name = arguments[i];
     var v = this.variable(name);
-    v.attrib || die('glod.pack: tried to pack uniform: ' + name);
-    v.ready  && die('glod.pack: variable already ready: ' + name);
+    v.attrib || die('Glod.pack: tried to pack uniform: ' + name);
+    v.ready  && die('Glod.pack: variable already ready: ' + name);
     var count = v.count;
     stride += count;
     counts.push(count);
@@ -761,37 +766,37 @@ glod.prototype.pack = function(vboName) {
   return this;
 };
 
-glod.prototype.primitive = function(mode) {
-  (mode >= 0 && mode <= 6) || die('glod.mode: bad mode: ' + mode);
+Glod.prototype.primitive = function(mode) {
+  (mode >= 0 && mode <= 6) || die('Glod.mode: bad mode: ' + mode);
   this._mode = mode
   return this;
 };
 
-glod.prototype.points        = function() { this._mode = this._gl.POINTS;         return this; };
-glod.prototype.lines         = function() { this._mode = this._gl.LINES;          return this; };
-glod.prototype.lineLoop      = function() { this._mode = this._gl.LINE_LOOP;      return this; };
-glod.prototype.lineStrip     = function() { this._mode = this._gl.LINE_STRIP;     return this; };
-glod.prototype.triangles     = function() { this._mode = this._gl.TRIANGLES;      return this; };
-glod.prototype.triangleStrip = function() { this._mode = this._gl.TRIANGLE_STRIP; return this; };
-glod.prototype.triangleFan   = function() { this._mode = this._gl.TRIANGLE_FAN;   return this; };
+Glod.prototype.points        = function() { this._mode = this._gl.POINTS;         return this; };
+Glod.prototype.lines         = function() { this._mode = this._gl.LINES;          return this; };
+Glod.prototype.lineLoop      = function() { this._mode = this._gl.LINE_LOOP;      return this; };
+Glod.prototype.lineStrip     = function() { this._mode = this._gl.LINE_STRIP;     return this; };
+Glod.prototype.triangles     = function() { this._mode = this._gl.TRIANGLES;      return this; };
+Glod.prototype.triangleStrip = function() { this._mode = this._gl.TRIANGLE_STRIP; return this; };
+Glod.prototype.triangleFan   = function() { this._mode = this._gl.TRIANGLE_FAN;   return this; };
 
-glod.prototype.drawArrays = function(first, count) {
+Glod.prototype.drawArrays = function(first, count) {
   var mode = this._mode;
-  (mode >= 0 && mode <= 6) || die('glod.drawArrays: mode not set');
+  (mode >= 0 && mode <= 6) || die('Glod.drawArrays: mode not set');
   var gl = this.gl();
   gl.drawArrays(mode, first, count);
   return this;
 };
 
-glod.prototype.clearColor   = function(r, g, b, a) { this.gl().clearColor  (r, g, b, a); return this; };
-glod.prototype.clearDepth   = function(d         ) { this.gl().clearDepth  (d         ); return this; };
-glod.prototype.clearStencil = function(s         ) { this.gl().clearStencil(s         ); return this; };
+Glod.prototype.clearColor   = function(r, g, b, a) { this.gl().clearColor  (r, g, b, a); return this; };
+Glod.prototype.clearDepth   = function(d         ) { this.gl().clearDepth  (d         ); return this; };
+Glod.prototype.clearStencil = function(s         ) { this.gl().clearStencil(s         ); return this; };
 
-glod.prototype.clearColorv = function(s) {
+Glod.prototype.clearColorv = function(s) {
   return this.clearColor(s[0], s[1], s[2], s[3]);
 };
 
-glod.prototype.clear = function(color, depth, stencil) {
+Glod.prototype.clear = function(color, depth, stencil) {
   var gl = this.gl();
 
   var clearBits = 0;
@@ -803,37 +808,37 @@ glod.prototype.clear = function(color, depth, stencil) {
   return this;
 };
 
-glod.prototype.bindArrayBuffer = function(name) {
+Glod.prototype.bindArrayBuffer = function(name) {
   var gl = this._gl;
   gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo(name));
   return this;
 };
 
-glod.prototype.bindElementBuffer = function(name) {
+Glod.prototype.bindElementBuffer = function(name) {
   var gl = this._gl;
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.vbo(name));
   return this;
 };
 
-glod.prototype.bindTexture2D = function(name) {
+Glod.prototype.bindTexture2D = function(name) {
   var gl = this._gl;
   gl.bindTexture(gl.TEXTURE_2D, this.texture(name));
   return this;
 }
 
-glod.prototype.init = function(id, f) {
+Glod.prototype.init = function(id, f) {
   this._initIds[id] || f();
   this._initIds[id] = true;
   return this;
 };
 
-glod.prototype.alloc = function(id, f) {
+Glod.prototype.alloc = function(id, f) {
   this._allocIds[id] || f();
   this._allocIds[id] = true;
   return this;
 };
 
-glod.prototype.allocv = function(id, v, f) {
+Glod.prototype.allocv = function(id, v, f) {
   if (this._versionedIds[id] !== v) {
     this._versionedIds[id] = v;
     f();

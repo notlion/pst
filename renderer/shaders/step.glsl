@@ -42,15 +42,18 @@ struct PrevPoint {
   vec4 pos;
   vec4 color;
 };
+
 struct Point {
   vec4 pos;
   vec4 color;
   PrevPoint prev;
-} point;
+};
 
 void main() {
   float index = gl_FragCoord.x + gl_FragCoord.y * side;
   vec2 uv = gl_FragCoord.xy / side;
+
+  Point point;
 
   //{{shaderSrc}}
 

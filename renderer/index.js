@@ -1,6 +1,9 @@
 'use strict';
 
 var Glod = require('./glod');
+var glslParseErrors = require('./glsl-parse-error');
+var EventEmitter = require('events').EventEmitter;
+
 var glmatrix = require('gl-matrix');
 var mat4 = glmatrix.mat4;
 
@@ -13,17 +16,16 @@ module.exports = PstRenderer;
 function PstRenderer() {
   this._texDim = 1 << 10;
   this._count = this._texDim * this._texDim;
+  this._shaderTemplate = Glod.preprocessed['step'].fragment;
   this.glod = new Glod();
 }
 
+PstRenderer.prototype = Object.create(EventEmitter.prototype);
+
 Object.defineProperties(PstRenderer.prototype, {
   canvas: {
-    get: function() {
-      return this.glod.canvas();
-    },
-    set: function(canvas) {
-      return this.glod.canvas(canvas);
-    }
+    get: function()       { return this.glod.canvas() },
+    set: function(canvas) { return this.glod.canvas(canvas) }
   },
   shader: {
     get: function() {
@@ -46,7 +48,6 @@ PstRenderer.prototype.init = function() {
     .clearColor(0.0, 0.0, 0.0, 1.0)
     .createProgram('debug')
     .createProgram('draw')
-    .createProgram('step')
     .createVBO('index')
     .createTexture('position')
     .createVBO('quad')
@@ -69,6 +70,45 @@ PstRenderer.prototype.init = function() {
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, glod.texture('position'), 0);
 };
 
+PstRenderer.prototype.compile = function() {
+  var glod = this.glod;
+
+  // Save the existing program so we can restore it if compilation fails.
+  var oldProgram = glod._programs['step'];
+  delete glod._programs['step'];
+
+  var token = '//{{shaderSrc}}';
+  var tokenIndex = this._shaderTemplate.match(token).index;
+
+  // Insert the shader fragment into the template.
+  var src = this._shaderTemplate.slice(0, tokenIndex) + this._shaderSrc +
+            this._shaderTemplate.slice(tokenIndex + token.length);
+
+  // Inject the new templated frament shader into the preprocessed program.
+  Glod.preprocessed['step'].fragment = src;
+
+  try {
+    glod.createProgram('step');
+    this.emit('compile');
+  }
+  catch(err) {
+    // Dang.. Compilation failed.
+    // Restore the old shader and emit an error.
+    glod._programs['step'] = oldProgram;
+
+    // Adjust error line numbers and emit.
+    var errors = glslParseErrors(err.data);
+    var lineAdjustment = -stringIndexToLineNum(src, tokenIndex);
+    errors.forEach(function(error) {
+      error.line += lineAdjustment;
+    });
+    this.emit('error', errors);
+  }
+
+  // No point in recompiling something that doesn't work and hasn't changed.
+  this._shaderSrcDirty = false;
+};
+
 PstRenderer.prototype.step = function() {
   var glod = this.glod;
 
@@ -79,6 +119,8 @@ PstRenderer.prototype.step = function() {
   var canvas = glod.canvas();
   canvas.width = canvas.clientWidth;
   canvas.height = canvas.clientHeight;
+
+  if (this._shaderSrcDirty) this.compile();
 
   glod
     .bindFramebuffer('particles')
@@ -134,3 +176,11 @@ PstRenderer.prototype.step = function() {
       .drawArrays(0, this._count)
     .end();
 };
+
+function stringIndexToLineNum(str, index) {
+  if (index <= 0) return 0;
+  if (index >= str.length) {
+    throw 'index is larger than the string length';
+  }
+  return str.slice(0, index + 1).trimRight().split('\n').length;
+}

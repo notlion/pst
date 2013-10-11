@@ -17,8 +17,18 @@
       created: function() {
         var PstRenderer = require('./renderer/index.js');
         var renderer = this.renderer = new PstRenderer();
+
+        var self = this;
+
+        // Repeat events as DOM events.
+        var events = ['compile', 'error'];
+        events.forEach(function(name) {
+          renderer.on(name, self.fire.bind(self, name));
+        });
+
         renderer.canvas = this.$.canvas;
         renderer.init();
+
         function step() {
           requestAnimationFrame(step);
           renderer.step();

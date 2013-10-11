@@ -19,12 +19,20 @@
     <script>
       (function() {
         var cm = document.querySelector('code-mirror');
-        cm.addEventListener('valuechange', onShaderSrcChange);
+        cm.addEventListener('value', onShaderSrcChange);
 
         var renderer = document.querySelector('pst-renderer');
+        renderer.addEventListener('compile', onShaderCompileSuccess);
+        renderer.addEventListener('error', onShaderCompileError);
 
-        function onShaderSrcChange(shaderSrc) {
-          renderer.shader = shaderSrc;
+        function onShaderSrcChange(event) {
+          renderer.shader = event.detail;
+        }
+        function onShaderCompileSuccess() {
+          cm.clearErrors();
+        }
+        function onShaderCompileError(event) {
+          cm.setErrors(event.detail);
         }
       }());
     </script>

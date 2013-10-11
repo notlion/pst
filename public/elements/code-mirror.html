@@ -9,9 +9,27 @@
       .CodeMirror {
         height: 100%;
       }
+      .CodeMirror .error-gutter {
+        width: 12px;
+      }
+      .CodeMirror .error-marker {
+        color: #e01;
+        font-size: 14px;
+        line-height: 14px;
+      }
     </style>
   </template>
   <script>
+    (function() {
+
+    function makeErrorMarker(error) {
+      var elem = document.createElement('div');
+      elem.className = 'error-marker';
+      elem.textContent = '✖';
+      elem.setAttribute('title', error.message);
+      return elem;
+    }
+
     Polymer('code-mirror', {
       value: '',
       created: function() {
@@ -19,6 +37,7 @@
           value: this.value,
           mode: 'glsl',
           tabSize: 2,
+          gutters: ['CodeMirror-linenumbers', 'error-gutter'],
           lineNumbers: true,
           lineWrapping: true,
           dragDrop: false
@@ -30,11 +49,23 @@
         this.value = this.mirror.getDoc().getValue();
       },
       valueChanged: function() {
-        this.fire('valuechange', this.value);
+        this.fire('value', this.value);
       },
       refresh: function() {
         this.mirror.refresh();
+      },
+      setErrors: function(errors) {
+        var self = this;
+        errors.forEach(function(error) {
+          var marker = makeErrorMarker(error);
+          self.mirror.setGutterMarker(error.line, 'error-gutter', marker);
+        });
+      },
+      clearErrors: function() {
+        this.mirror.clearGutter('error-gutter');
       }
     });
+
+    }());
   </script>
 </polymer-element>
