@@ -9,8 +9,12 @@
   </head>
   <body>
     <div class="editor">
-      <code-mirror
-        value="point.pos = vec4(rand3(index / count + time), 1.);">
+      <code-mirror theme="pst" mode="x-shader/x-fragment"
+        value="void iter(inout Point p) {
+  float t = p.index / count;
+  p.pos.x = t * 2.0 - 1.0;
+  p.pos.y = sin(time + t * TAU);
+}">
       </code-mirror>
     </div>
     <div class="renderer">

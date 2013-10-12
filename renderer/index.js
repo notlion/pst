@@ -1,11 +1,13 @@
 'use strict';
 
-var Glod = require('./glod');
+var Glod            = require('./glod');
 var glslParseErrors = require('./glsl-parse-error');
+var loadTexture     = require('./load-texture');
+
 var EventEmitter = require('events').EventEmitter;
 
 var glmatrix = require('gl-matrix');
-var mat4 = glmatrix.mat4;
+var mat4     = glmatrix.mat4;
 
 Glod.preprocess(require('./shaders/debug.glsl.js'));
 Glod.preprocess(require('./shaders/draw.glsl.js'));
@@ -18,6 +20,9 @@ function PstRenderer() {
   this._count = this._texDim * this._texDim;
   this._shaderTemplate = Glod.preprocessed['step'].fragment;
   this.glod = new Glod();
+  this.textures = {
+    'noiseLUT': 'noise-lut.png'
+  };
 }
 
 PstRenderer.prototype = Object.create(EventEmitter.prototype);
@@ -38,36 +43,59 @@ Object.defineProperties(PstRenderer.prototype, {
   }
 });
 
+PstRenderer.prototype.configure = function(config) {
+  if (config.textureBaseUrl) {
+    this._textureBaseUrl = config.textureBaseUrl;
+    this.loadTextures();
+  }
+};
+
+PstRenderer.prototype.loadTextures = function() {
+  function createLoadCb(name) {
+    return function(err, texture) {
+      if (err) throw new Error(err);
+      glod._textures[name] = texture
+    };
+  }
+  var glod = this.glod, gl = glod.gl();
+  var url;
+  for (var name in this.textures) {
+    url = this._textureBaseUrl + '/' + this.textures[name];
+    loadTexture(gl, url, { filter: gl.LINEAR }, createLoadCb(name));
+  }
+};
+
 PstRenderer.prototype.init = function() {
   var glod = this.glod;
 
   var indices = new Array(this._count);
   for (var i = this._count; --i >= 0;) indices[i] = i;
 
-  glod
-    .clearColor(0.0, 0.0, 0.0, 1.0)
-    .createProgram('debug')
-    .createProgram('draw')
-    .createVBO('index')
-    .createTexture('position')
-    .createVBO('quad')
-    .uploadCCWQuad('quad')
-    .createFBO('particles')
-    .bufferDataStatic('index', indices)
+  glod.clearColor(0.0, 0.0, 0.0, 1.0)
+      .createProgram('debug')
+      .createProgram('draw')
+      .createVBO('index')
+      .createVBO('quad')
+      .uploadCCWQuad('quad')
+      .createFBO('particles')
+      .bufferDataStatic('index', indices)
 
   var gl = glod.gl();
+  var dim = this._texDim;
 
-  glod.bindTexture2D('position');
-  gl.activeTexture(gl.TEXTURE0);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this._texDim, this._texDim, 0, gl.RGBA, gl.FLOAT, null);
+  function createFBOTexture(name) {
+    glod.createTexture(name).bindTexture2D(name);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, dim, dim, 0, gl.RGBA, gl.FLOAT, null);
+  }
 
   glod.bindFramebuffer('particles');
+  createFBOTexture('position', 0);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, glod.texture('position'), 0);
+  // createFBOTexture('color', 1);
 };
 
 PstRenderer.prototype.compile = function() {
@@ -96,6 +124,8 @@ PstRenderer.prototype.compile = function() {
     // Restore the old shader and emit an error.
     glod._programs['step'] = oldProgram;
 
+    if (!err.data) throw err;
+
     // Adjust error line numbers and emit.
     var errors = glslParseErrors(err.data);
     var lineAdjustment = -stringIndexToLineNum(src, tokenIndex);
@@ -122,19 +152,22 @@ PstRenderer.prototype.step = function() {
 
   if (this._shaderSrcDirty) this.compile();
 
-  glod
-    .bindFramebuffer('particles')
-    .viewport(0, 0, this._texDim, this._texDim)
-    .begin('step')
-      .value('side', this._texDim)
-      .value('count', this._count)
-      .value('time', time)
-      .pack('quad', 'position')
-      .ready()
-      .clear(true, true, true)
-      .triangles()
-      .drawArrays(0, 6)
-    .end()
+  glod.bindFramebuffer('particles')
+      .viewport(0, 0, this._texDim, this._texDim)
+
+  if (glod.hasTexture('noiseLUT')) glod.bindTexture2D('noiseLUT');
+
+  glod.begin('step')
+        .value('side', this._texDim)
+        .value('count', this._count)
+        .value('time', time)
+        .value('noiseLUT', 0)
+        .pack('quad', 'position')
+        .ready()
+        .clear(true, true, true)
+        .triangles()
+        .drawArrays(0, 6)
+      .end()
 
   // Debug Draw
   // glod
@@ -156,7 +189,7 @@ PstRenderer.prototype.step = function() {
 
   var view = mat4.identity(mat4.create());
   mat4.translate(view, view, [0, 0, -5]);
-  mat4.rotateY(view, view, time);
+  // mat4.rotateY(view, view, time);
 
   var mvp = mat4.create();
   mat4.multiply(mvp, projection, view);
@@ -165,6 +198,7 @@ PstRenderer.prototype.step = function() {
   glod
     .bindFramebuffer(null)
     .viewport()
+    .bindTexture2D('position')
     .begin('draw')
       .pack('index', 'index')
       .value('side', this._texDim)

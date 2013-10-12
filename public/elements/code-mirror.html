@@ -1,7 +1,7 @@
 <script src="/lib/bower_components/codemirror/lib/codemirror.js"></script>
-<script src="/lib/codemirror-glsl.js"></script>
+<script src="/lib/bower_components/codemirror/mode/clike/clike.js"></script>
 
-<polymer-element name="code-mirror" attributes="value">
+<polymer-element name="code-mirror" attributes="value theme mode">
   <template>
     <link rel="stylesheet" href="/lib/bower_components/codemirror/lib/codemirror.css">
     <style>
@@ -32,10 +32,14 @@
 
     Polymer('code-mirror', {
       value: '',
+      theme: 'default',
+      mode:  'clike',
       created: function() {
+        console.log(CodeMirror.modes)
         this.mirror = CodeMirror(this.shadowRoot, {
           value: this.value,
-          mode: 'glsl',
+          theme: this.theme,
+          mode: this.mode,
           tabSize: 2,
           gutters: ['CodeMirror-linenumbers', 'error-gutter'],
           lineNumbers: true,

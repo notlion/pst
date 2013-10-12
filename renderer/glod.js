@@ -3,7 +3,7 @@
 module.exports = Glod;
 
 function GlodError(message, data) {
-  Error.call(this, message);
+  this.message = message;
   this.data = data;
 }
 GlodError.prototype = Object.create(Error.prototype);
@@ -28,7 +28,7 @@ function die(message, data) {
 }
 
 function Glod() {
-  // Allow instantiation without new.
+  // Prevent instantiation without new.
   if (!Glod.prototype.isPrototypeOf(this)) {
     die('Glod: instantiate with `new Glod()`')
   }
@@ -824,7 +824,13 @@ Glod.prototype.bindTexture2D = function(name) {
   var gl = this._gl;
   gl.bindTexture(gl.TEXTURE_2D, this.texture(name));
   return this;
-}
+};
+
+Glod.prototype.activeTexture = function(unit) {
+  var gl = this._gl;
+  gl.activeTexture(gl.TEXTURE0 + unit);
+  return this;
+};
 
 Glod.prototype.init = function(id, f) {
   this._initIds[id] || f();
