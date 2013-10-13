@@ -3,10 +3,6 @@
 precision highp float;
 precision highp int;
 
-uniform float side;
-uniform float time;
-uniform float count;
-
 #define PI  3.141592653589793
 #define TAU 6.283185307179586
 
@@ -20,6 +16,10 @@ void main() {
 
 //!fragment
 
+uniform float side;
+uniform float time;
+uniform float count;
+uniform bool colorPass;
 uniform sampler2D noiseLUT;
 
 float noise(in vec3 x) {
@@ -56,5 +56,6 @@ void main() {
 
   iter(point);
 
-  gl_FragColor = point.pos;
+  if (colorPass) gl_FragColor = point.color;
+  else           gl_FragColor = point.pos;
 }
