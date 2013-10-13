@@ -20,6 +20,9 @@ function PstRenderer() {
   this._count = this._texDim * this._texDim;
   this._shaderTemplate = Glod.preprocessed['step'].fragment;
   this.glod = new Glod();
+  this.contextOptions = {
+    antialias: true
+  };
   this.textures = {
     'noiseLUT': 'noise-lut.png'
   };
@@ -29,8 +32,12 @@ PstRenderer.prototype = Object.create(EventEmitter.prototype);
 
 Object.defineProperties(PstRenderer.prototype, {
   canvas: {
-    get: function()       { return this.glod.canvas() },
-    set: function(canvas) { return this.glod.canvas(canvas) }
+    get: function() {
+      return this.glod.canvas();
+    },
+    set: function(canvas) {
+      return this.glod.canvas(canvas, this.contextOptions);
+    }
   },
   shader: {
     get: function() {
@@ -61,7 +68,10 @@ PstRenderer.prototype.loadTextures = function() {
   var url;
   for (var name in this.textures) {
     url = this._textureBaseUrl + '/' + this.textures[name];
-    loadTexture(gl, url, { filter: gl.LINEAR }, createLoadCb(name));
+    loadTexture(gl, url, {
+      filter: gl.LINEAR,
+      wrap:   gl.REPEAT
+    }, createLoadCb(name));
   }
 };
 
@@ -155,7 +165,9 @@ PstRenderer.prototype.step = function() {
   glod.bindFramebuffer('particles')
       .viewport(0, 0, this._texDim, this._texDim)
 
-  if (glod.hasTexture('noiseLUT')) glod.bindTexture2D('noiseLUT');
+  if (glod.hasTexture('noiseLUT')) {
+    glod.bindTexture2D('noiseLUT').activeTexture(0);
+  }
 
   glod.begin('step')
         .value('side', this._texDim)
@@ -189,21 +201,21 @@ PstRenderer.prototype.step = function() {
 
   var view = mat4.identity(mat4.create());
   mat4.translate(view, view, [0, 0, -5]);
-  // mat4.rotateY(view, view, time);
-
-  var mvp = mat4.create();
-  mat4.multiply(mvp, projection, view);
 
   // draw as individual points
   glod
     .bindFramebuffer(null)
     .viewport()
     .bindTexture2D('position')
+    .activeTexture(0)
     .begin('draw')
       .pack('index', 'index')
       .value('side', this._texDim)
+      .value('width', glod.canvas().width)
+      .value('pointSize', 0.001)
       .value('position', 0)
-      .valuev('transform', mvp)
+      .valuev('view', view)
+      .valuev('projection', projection)
       .ready()
       .clear(true, true, true)
       .points()

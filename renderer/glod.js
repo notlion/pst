@@ -198,7 +198,7 @@ Glod.prototype.extension = function() {
   die('Glod.extension: extension not found: ' + arguments);
 };
 
-Glod.prototype.canvas = function(canvas) {
+Glod.prototype.canvas = function(canvas, options) {
   if (arguments.length === 0) {
     this.hasCanvas() || die('Glod.canvas: no canvas');
     return this._canvas;
@@ -218,9 +218,9 @@ Glod.prototype.canvas = function(canvas) {
   if (this.hasCanvas()) {
     this._canvas.addEventListener('webglcontextlost', this._onContextLost);
     this._canvas.addEventListener('webglcontextrestored', this._onContextRestored);
-    var options = {antialias: false};
+    var opts = options || { antialias: false };
     var gl = this._canvas.getContext('webgl', options);
-    gl || (gl = this._canvas.getContext('experimental-webgl', options));
+    gl || (gl = this._canvas.getContext('experimental-webgl', opts));
     gl || (die('Glod.canvas: failed to create context'));
     // wrap && (gl = WebGLDebugUtils.makeDebugContext(gl, throwOnGLError, logAndValidate));
     this._gl = gl;

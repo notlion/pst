@@ -3,7 +3,12 @@
 <polymer-element name="pst-renderer" attributes="shader">
   <template>
     <style>
-      @host { * { display: block; } }
+      @host {
+        * {
+          display: block;
+          overflow: hidden;
+        }
+      }
       canvas {
         width: 100%;
         height: 100%;
