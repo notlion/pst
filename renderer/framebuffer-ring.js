@@ -17,7 +17,7 @@ FramebufferRing.prototype.alloc = function(count, opts) {
   return this;
 };
 
-// 0 <- 2 <- 1 <- 0
+// 0 -> 1 -> 2 -> ... -> 0
 FramebufferRing.prototype.rotate = function() {
   var glod = this.glod;
   var name = this.name, count = this.count, last = count - 1;

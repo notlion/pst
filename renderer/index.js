@@ -114,7 +114,7 @@ PstRenderer.prototype.reset = function() {
 }
 
 PstRenderer.prototype.step = function() {
-  var glod = this.glod;
+  var glod = this.glod, gl = glod.gl();
 
   if (!this._startMillis) this._startMillis = Date.now();
   var time = (Date.now() - this._startMillis) / 1000;
@@ -166,10 +166,14 @@ PstRenderer.prototype.step = function() {
   var aspect = glod.canvas().clientWidth / glod.canvas().clientHeight;
 
   var projection = mat4.create();
-  mat4.perspective(projection, Math.PI * 2 / 8, aspect, 0.1, 20000);
+  mat4.perspective(projection, Math.PI * 2 / 8, aspect, 0.1, 100);
 
   var view = mat4.identity(mat4.create());
   mat4.translate(view, view, [0, 0, -5]);
+
+  gl.enable(gl.DEPTH_TEST);
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
   // draw as individual points
   glod
@@ -196,6 +200,9 @@ PstRenderer.prototype.step = function() {
   this._colorRing.rotate();
 
   this.frameId++;
+
+  gl.disable(gl.DEPTH_TEST);
+  gl.disable(gl.BLEND);
 };
 
 PstRenderer.prototype.loadTextures = function() {
