@@ -11,7 +11,6 @@ var EventEmitter    = require('events').EventEmitter;
 var glmatrix        = require('gl-matrix');
 var mat4            = glmatrix.mat4;
 
-// Glod.preprocess(require('./shaders/debug.glsl.js'));
 Glod.preprocess(require('./shaders/draw.glsl.js'));
 Glod.preprocess(require('./shaders/step.glsl.js'));
 Glod.preprocess(require('./shaders/fill.glsl.js'));
@@ -31,7 +30,7 @@ function PstRenderer() {
   };
   this.setShaderDirty = debounce(function() {
     this._shaderSrcDirty = true;
-  }.bind(this), 500);
+  }.bind(this), 250);
 }
 
 PstRenderer.prototype = Object.create(EventEmitter.prototype);
@@ -72,7 +71,6 @@ PstRenderer.prototype.init = function() {
 
   glod
   .clearColor(0.0, 0.0, 0.0, 1.0)
-  // .createProgram('debug')
   .createProgram('fill')
   .createProgram('draw')
   .createVBO('index')
@@ -94,10 +92,12 @@ PstRenderer.prototype.init = function() {
 };
 
 PstRenderer.prototype.reset = function() {
+  var glod = this.glod, dim = this._texDim;
+
   function fill(color, name) {
-    this.glod
+    glod
     .bindFramebuffer(name)
-    .viewport(0, 0, this._texDim, this._texDim)
+    .viewport(0, 0, dim, dim)
     .begin('fill')
       .valuev('color', color)
       .pack('quad', 'position')
@@ -107,8 +107,8 @@ PstRenderer.prototype.reset = function() {
     .end()
   }
 
-  ['position1', 'position2'].forEach(fill.bind(this, [0.0, 0.0, 0.0, 1.0]));
-  ['color1',    'color2'   ].forEach(fill.bind(this, [1.0, 1.0, 1.0, 1.0]));
+  ['position1', 'position2'].forEach(fill.bind(null, [0.0, 0.0, 0.0, 1.0]));
+  ['color1',    'color2'   ].forEach(fill.bind(null, [1.0, 1.0, 1.0, 1.0]));
 
   this.frameId = 0;
 }
