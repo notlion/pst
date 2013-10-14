@@ -94,23 +94,23 @@ PstRenderer.prototype.init = function() {
 };
 
 PstRenderer.prototype.reset = function() {
-  var dim = this._texDim;
-  var glod = this.glod;
-
-  [ 'position1', 'color1',
-    'position2', 'color2' ]
-  .forEach(function(name) {
-    glod
+  function fill(color, name) {
+    this.glod
     .bindFramebuffer(name)
-    .viewport(0, 0, dim, dim)
+    .viewport(0, 0, this._texDim, this._texDim)
     .begin('fill')
-      .valuev('color', [0.0, 0.0, 0.0, 1.0])
+      .valuev('color', color)
       .pack('quad', 'position')
       .ready()
       .triangles()
       .drawArrays(0, 6)
     .end()
-  });
+  }
+
+  ['position1', 'position2'].forEach(fill.bind(this, [0.0, 0.0, 0.0, 1.0]));
+  ['color1',    'color2'   ].forEach(fill.bind(this, [1.0, 1.0, 1.0, 1.0]));
+
+  this.frameId = 0;
 }
 
 PstRenderer.prototype.step = function() {
@@ -119,7 +119,7 @@ PstRenderer.prototype.step = function() {
   if (!this._startMillis) this._startMillis = Date.now();
   var time = (Date.now() - this._startMillis) / 1000;
 
-  var dim = this._texDim, count = this._count;
+  var dim = this._texDim, count = this._count, frame = this.frameId;
 
   // Resize canvas
   var canvas = glod.canvas();
@@ -146,12 +146,13 @@ PstRenderer.prototype.step = function() {
       .value('side', dim)
       .value('count', count)
       .value('time', time)
+      .value('frame', frame)
       .value('position1', 0)
       .value('position2', 1)
       .value('color1', 2)
       .value('color2', 3)
       .value('noiseLUT', 4)
-      .value('colorPass', passName === 'color')
+      .value('useColor', passName === 'color')
       .pack('quad', 'position')
       .ready()
       .triangles()
@@ -193,6 +194,8 @@ PstRenderer.prototype.step = function() {
 
   this._positionRing.rotate();
   this._colorRing.rotate();
+
+  this.frameId++;
 };
 
 PstRenderer.prototype.loadTextures = function() {

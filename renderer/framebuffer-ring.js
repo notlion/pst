@@ -24,18 +24,18 @@ FramebufferRing.prototype.rotate = function() {
 
   var lastName = name + (count - 1);
   var lastFbo = glod.fbo(lastName);
-  var lastTex = glod.fbo(lastName);
+  var lastTex = glod.texture(lastName);
 
   var fromName, toName;
   for (var i = count; --i > 0;) {
-    fromName = name + i;
-    toName = name + (i - 1);
+    toName   = name + i;
+    fromName = name + (i - 1);
     glod._fbos[toName] = glod.fbo(fromName);
     glod._textures[toName] = glod.texture(fromName);
   }
 
-  glod._fbos[name + 0] = glod.fbo(lastName);
-  glod._textures[name + 0] = glod.texture(lastName);
+  glod._fbos[name + 0] = lastFbo;
+  glod._textures[name + 0] = lastTex;
 
   return this;
 };

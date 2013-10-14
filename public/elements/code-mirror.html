@@ -59,6 +59,7 @@
       },
       setErrors: function(errors) {
         var self = this;
+        this.clearErrors();
         errors.forEach(function(error) {
           var marker = makeErrorMarker(error);
           self.mirror.setGutterMarker(error.line, 'error-gutter', marker);

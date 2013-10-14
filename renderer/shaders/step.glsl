@@ -16,8 +16,8 @@ void main() {
 
 //!fragment
 
-uniform float side, time, count;
-uniform bool colorPass;
+uniform float side, time, frame, count;
+uniform bool useColor;
 uniform sampler2D position1, position2, color1, color2, noiseLUT;
 
 float noise(in vec3 x) {
@@ -58,6 +58,6 @@ void main() {
 
   iter(point);
 
-  if (colorPass) gl_FragColor = point.color;
-  else           gl_FragColor = point.pos;
+  if (useColor) gl_FragColor = point.color;
+  else          gl_FragColor = point.pos;
 }
