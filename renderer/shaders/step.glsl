@@ -16,11 +16,9 @@ void main() {
 
 //!fragment
 
-uniform float side;
-uniform float time;
-uniform float count;
+uniform float side, time, count;
 uniform bool colorPass;
-uniform sampler2D noiseLUT;
+uniform sampler2D position1, position2, color1, color2, noiseLUT;
 
 float noise(in vec3 x) {
   vec3 p = floor(x);
@@ -49,10 +47,14 @@ struct Point {
 void main() {
   Point point;
 
-  point.pos = vec4(0.0, 0.0, 0.0, 1.0);
-  point.color = vec4(1.0);
-  point.uv = gl_FragCoord.xy / side;
-  point.index = gl_FragCoord.x + gl_FragCoord.y * side;
+  vec2 uv = gl_FragCoord.xy / side;
+
+  point.pos        = texture2D(position1, uv);
+  point.color      = texture2D(color1, uv);
+  point.prev.pos   = texture2D(position2, uv);
+  point.prev.color = texture2D(color2, uv);
+  point.uv         = uv;
+  point.index      = gl_FragCoord.x + gl_FragCoord.y * side;
 
   iter(point);
 

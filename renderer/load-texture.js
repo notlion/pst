@@ -1,5 +1,7 @@
 'use strict';
 
+var texParams = require('./tex-params');
+
 var isBrowser = typeof window !== 'undefined';
 
 module.exports = function loadTexture(gl, url, opts, callback) {
@@ -18,18 +20,12 @@ function loadTextureBrowser(gl, url) {
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, !!opts.flip);
 
-    var minFilter = opts.minFilter || opts.filter || gl.NEAREST;
-    var magFilter = opts.magFilter || opts.filter || gl.NEAREST;
-    var wraps     = opts.wrapS     || opts.wrap   || gl.CLAMP_TO_EDGE;
-    var wrapt     = opts.wrapT     || opts.wrap   || gl.CLAMP_TO_EDGE;
-    var iformat   = opts.internalFormat           || gl.RGBA;
-    var format    = opts.format                   || gl.RGBA;
-    var type      = opts.type                     || gl.UNSIGNED_BYTE;
+    texParams(gl, opts);
 
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, minFilter);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, magFilter);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wraps);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrapt);
+    var iformat = opts.internalFormat || gl.RGBA;
+    var format  = opts.format         || gl.RGBA;
+    var type    = opts.type           || gl.UNSIGNED_BYTE;
+
     gl.texImage2D(gl.TEXTURE_2D, 0, iformat, format, type, img);
 
     // Make sure to unbind

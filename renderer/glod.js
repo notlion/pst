@@ -821,8 +821,9 @@ Glod.prototype.bindElementBuffer = function(name) {
 };
 
 Glod.prototype.bindTexture2D = function(name) {
+  var texture = name === null ? null : this.texture(name);
   var gl = this._gl;
-  gl.bindTexture(gl.TEXTURE_2D, this.texture(name));
+  gl.bindTexture(gl.TEXTURE_2D, texture);
   return this;
 };
 

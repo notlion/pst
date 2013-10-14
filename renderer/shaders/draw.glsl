@@ -3,7 +3,7 @@
 precision highp float;
 precision highp int;
 
-uniform sampler2D positionWrite;
+uniform sampler2D position0;
 uniform mat4 projection, view;
 uniform float side, pointSize, width;
 
@@ -17,7 +17,7 @@ void main() {
   float y = floor(index / side);
   uv = vec2(index - y * side, y) / side;
 
-  vec4 pos = texture2D(positionWrite, uv);
+  vec4 pos = texture2D(position0, uv);
 
   vec4 eye = view * pos;
   vec4 proj = projection * vec4(pointSize, pointSize, eye.z, eye.w);
@@ -28,8 +28,8 @@ void main() {
 
 //!fragment
 
-uniform sampler2D colorWrite;
+uniform sampler2D color0;
 
 void main() {
-  gl_FragColor = texture2D(colorWrite, uv);
+  gl_FragColor = texture2D(color0, uv);
 }

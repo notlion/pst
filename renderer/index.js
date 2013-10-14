@@ -1,18 +1,20 @@
 'use strict';
 
 var Glod            = require('./glod');
-var glslParseErrors = require('./glsl-parse-error');
+var FramebufferRing = require('./framebuffer-ring');
+var glslParseError  = require('./glsl-parse-error');
 var loadTexture     = require('./load-texture');
 var debounce        = require('./debounce');
 
-var EventEmitter = require('events').EventEmitter;
+var EventEmitter    = require('events').EventEmitter;
 
-var glmatrix = require('gl-matrix');
-var mat4     = glmatrix.mat4;
+var glmatrix        = require('gl-matrix');
+var mat4            = glmatrix.mat4;
 
-Glod.preprocess(require('./shaders/debug.glsl.js'));
+// Glod.preprocess(require('./shaders/debug.glsl.js'));
 Glod.preprocess(require('./shaders/draw.glsl.js'));
 Glod.preprocess(require('./shaders/step.glsl.js'));
+Glod.preprocess(require('./shaders/fill.glsl.js'));
 
 module.exports = PstRenderer;
 
@@ -70,7 +72,8 @@ PstRenderer.prototype.init = function() {
 
   glod
   .clearColor(0.0, 0.0, 0.0, 1.0)
-  .createProgram('debug')
+  // .createProgram('debug')
+  .createProgram('fill')
   .createProgram('draw')
   .createVBO('index')
   .createVBO('quad')
@@ -78,26 +81,37 @@ PstRenderer.prototype.init = function() {
   .bufferDataStatic('index', indices)
 
   var gl = glod.gl();
-  var dim = this._texDim;
 
-  function createFBOTexture(name) {
-    glod.createTexture(name).bindTexture2D(name);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, dim, dim, 0, gl.RGBA, gl.FLOAT, null);
-  }
+  var texOpts = {
+    width:  this._texDim,
+    height: this._texDim,
+    type:   gl.FLOAT
+  };
+  this._positionRing = new FramebufferRing(glod, 'position').alloc(3, texOpts);
+  this._colorRing = new FramebufferRing(glod, 'color').alloc(3, texOpts);
 
-  function createParticlesFBO(name) {
-    glod.createFBO(name).bindFramebuffer(name);
-    createFBOTexture(name);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, glod.texture(name), 0);
-  }
-
-  createParticlesFBO('positionWrite');
-  createParticlesFBO('colorWrite');
+  this.reset();
 };
+
+PstRenderer.prototype.reset = function() {
+  var dim = this._texDim;
+  var glod = this.glod;
+
+  [ 'position1', 'color1',
+    'position2', 'color2' ]
+  .forEach(function(name) {
+    glod
+    .bindFramebuffer(name)
+    .viewport(0, 0, dim, dim)
+    .begin('fill')
+      .valuev('color', [0.0, 0.0, 0.0, 1.0])
+      .pack('quad', 'position')
+      .ready()
+      .triangles()
+      .drawArrays(0, 6)
+    .end()
+  });
+}
 
 PstRenderer.prototype.step = function() {
   var glod = this.glod;
@@ -116,11 +130,15 @@ PstRenderer.prototype.step = function() {
 
   function renderStepPass(passName) {
     glod
-    .bindFramebuffer(passName + 'Write')
+    .bindFramebuffer(passName + 0)
     .viewport(0, 0, dim, dim)
+    .activeTexture(0).bindTexture2D('position1')
+    .activeTexture(1).bindTexture2D('position2')
+    .activeTexture(2).bindTexture2D('color1')
+    .activeTexture(3).bindTexture2D('color2')
 
     if (glod.hasTexture('noiseLUT')) {
-      glod.activeTexture(0).bindTexture2D('noiseLUT');
+      glod.activeTexture(4).bindTexture2D('noiseLUT');
     }
 
     glod
@@ -128,7 +146,11 @@ PstRenderer.prototype.step = function() {
       .value('side', dim)
       .value('count', count)
       .value('time', time)
-      .value('noiseLUT', 0)
+      .value('position1', 0)
+      .value('position2', 1)
+      .value('color1', 2)
+      .value('color2', 3)
+      .value('noiseLUT', 4)
       .value('colorPass', passName === 'color')
       .pack('quad', 'position')
       .ready()
@@ -152,15 +174,15 @@ PstRenderer.prototype.step = function() {
   glod
   .bindFramebuffer(null)
   .viewport()
-  .activeTexture(0).bindTexture2D('positionWrite')
-  .activeTexture(1).bindTexture2D('colorWrite')
+  .activeTexture(0).bindTexture2D('position0')
+  .activeTexture(1).bindTexture2D('color0')
   .begin('draw')
     .pack('index', 'index')
     .value('side', this._texDim)
     .value('width', glod.canvas().width)
     .value('pointSize', 0.001)
-    .value('positionWrite', 0)
-    .value('colorWrite', 1)
+    .value('position0', 0)
+    .value('color0', 1)
     .valuev('view', view)
     .valuev('projection', projection)
     .ready()
@@ -168,6 +190,9 @@ PstRenderer.prototype.step = function() {
     .points()
     .drawArrays(0, this._count)
   .end();
+
+  this._positionRing.rotate();
+  this._colorRing.rotate();
 };
 
 PstRenderer.prototype.loadTextures = function() {
@@ -217,7 +242,7 @@ PstRenderer.prototype.compile = function() {
     if (!err.data) throw err;
 
     // Adjust error line numbers and emit.
-    var errors = glslParseErrors(err.data);
+    var errors = glslParseError(err.data);
     var lineAdjustment = -stringIndexToLineNum(src, tokenIndex);
     errors.forEach(function(error) {
       error.line += lineAdjustment;
