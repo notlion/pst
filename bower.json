@@ -5,6 +5,7 @@
   "private": true,
   "dependencies": {
     "polymer": "~0.0.20130912",
-    "codemirror": "~3.18.0"
+    "codemirror": "~3.18.0",
+    "hammerjs": "~1.0.5"
   }
 }

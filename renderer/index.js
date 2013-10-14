@@ -21,7 +21,12 @@ function PstRenderer() {
   this._texDim = 1 << 10;
   this._count = this._texDim * this._texDim;
   this._shaderTemplate = Glod.preprocessed['step'].fragment;
+
   this.glod = new Glod();
+
+  this.view = mat4.create();
+  this.projection = mat4.create();
+
   this.contextOptions = {
     antialias: true
   };
@@ -163,14 +168,6 @@ PstRenderer.prototype.step = function() {
   renderStepPass('position');
   renderStepPass('color');
 
-  var aspect = glod.canvas().clientWidth / glod.canvas().clientHeight;
-
-  var projection = mat4.create();
-  mat4.perspective(projection, Math.PI * 2 / 8, aspect, 0.1, 100);
-
-  var view = mat4.identity(mat4.create());
-  mat4.translate(view, view, [0, 0, -5]);
-
   gl.enable(gl.DEPTH_TEST);
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -188,8 +185,8 @@ PstRenderer.prototype.step = function() {
     .value('pointSize', 0.001)
     .value('position0', 0)
     .value('color0', 1)
-    .valuev('view', view)
-    .valuev('projection', projection)
+    .valuev('view', this.view)
+    .valuev('projection', this.projection)
     .ready()
     .clear(true, true, true)
     .points()

@@ -1,4 +1,5 @@
 <script src="/gen/renderer.js"></script>
+<script src="/lib/bower_components/hammerjs/dist/hammer.js"></script>
 
 <polymer-element name="pst-renderer" attributes="shader">
   <template>
@@ -21,7 +22,21 @@
       shader: '',
       created: function() {
         var PstRenderer = require('./renderer/index.js');
+        var Camera      = require('./renderer/camera.js');
+
+        var canvas = this.$.canvas;
+
         var renderer = this.renderer = new PstRenderer();
+        var camera = this.camera = new Camera(canvas, {
+          view:       renderer.view,
+          projection: renderer.projection
+        });
+
+        // Route input events.
+        var hammer = Hammer(canvas);
+        hammer.on('dragstart', this.handleDragStart.bind(this));
+        hammer.on('drag', this.handleDrag.bind(this));
+        hammer.on('dragend', this.handleDragEnd.bind(this));
 
         var self = this;
 
@@ -31,7 +46,7 @@
           renderer.on(name, self.fire.bind(self, name));
         });
 
-        renderer.canvas = this.$.canvas;
+        renderer.canvas = canvas;
         renderer.configure({
           textureBaseUrl: '/img'
         });
@@ -39,12 +54,26 @@
 
         function step() {
           requestAnimationFrame(step);
+          camera.step();
           renderer.step();
         }
         requestAnimationFrame(step);
       },
       shaderChanged: function() {
         this.renderer.shader = this.shader;
+      },
+      handleDragStart: function(event) {
+        var c = event.gesture.center;
+        var b = this.$.canvas.getBoundingClientRect();
+        this.camera.startDrag(c.pageX - b.left, b.bottom - c.pageY);
+      },
+      handleDrag: function(event) {
+        var c = event.gesture.center;
+        var b = this.$.canvas.getBoundingClientRect();
+        this.camera.drag(c.pageX - b.left, b.bottom - c.pageY);
+      },
+      handleDragEnd: function(event) {
+        this.camera.endDrag();
       }
     });
   </script>

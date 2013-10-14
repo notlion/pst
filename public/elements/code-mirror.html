@@ -1,5 +1,6 @@
 <script src="/lib/bower_components/codemirror/lib/codemirror.js"></script>
 <script src="/lib/bower_components/codemirror/mode/clike/clike.js"></script>
+<script src="/lib/bower_components/codemirror/addon/comment/comment.js"></script>
 
 <polymer-element name="code-mirror" attributes="value theme mode">
   <template>
@@ -36,6 +37,11 @@
       theme: 'default',
       mode:  'clike',
       created: function() {
+        CodeMirror.keyMap['pst'] = {
+          'Cmd-/': 'toggleComment',
+          fallthrough: ['default']
+        };
+
         this.mirror = CodeMirror(this.shadowRoot, {
           value: this.value,
           theme: this.theme,
@@ -44,8 +50,10 @@
           gutters: ['CodeMirror-linenumbers', 'error-gutter'],
           lineNumbers: true,
           lineWrapping: true,
-          dragDrop: false
+          dragDrop: false,
+          keyMap: 'pst'
         });
+
         this.mirror.on('change', this.changeHandler.bind(this));
         window.addEventListener('resize', this.refresh.bind(this));
       },

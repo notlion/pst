@@ -5,7 +5,7 @@ gen = public/gen
 
 $(gen)/renderer.js:
 	cd ./renderer && make
-	$(browserify) -r ./renderer/index.js > $(gen)/renderer.js
+	$(browserify) -r ./renderer/index.js -r ./renderer/camera.js > $(gen)/renderer.js
 
 minify: $(gen)/renderer.js
 	$(foreach file, $?, $(uglify) $(file) --screw-ie8 -m -c -o $(file))
