@@ -21,7 +21,7 @@ void main() {
 
   vec4 eye = view * pos;
   vec4 proj = projection * vec4(pointSize, pointSize, eye.z, eye.w);
-  gl_PointSize = clamp(width * proj.x / proj.w, 1.0, 10.0);
+  gl_PointSize = clamp(width * proj.x / proj.w, 2.0, 10.0);
 
   gl_Position = projection * eye;
 }
