@@ -26,7 +26,7 @@ Camera.prototype.step = function() {
   }
 
   var aspect = this.canvas.clientWidth / this.canvas.clientHeight;
-  mat4.perspective(this.projection, this.fovy, aspect, 0.1, 100);
+  mat4.perspective(this.projection, this.fovy, aspect, 0.01, 100);
   mat4.fromRotationTranslation(this.view, this.orientation, this.position);
 };
 
