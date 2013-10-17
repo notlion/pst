@@ -58,7 +58,7 @@ function createFramebuffer(glod, name, opts) {
   var format  = opts.format         || gl.RGBA;
   var type    = opts.type           || gl.UNSIGNED_BYTE;
 
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, opts.width, opts.height, 0, gl.RGBA, gl.FLOAT, null);
+  gl.texImage2D(gl.TEXTURE_2D, 0, iformat, opts.width, opts.height, 0, format, type, null);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, glod.texture(name), 0);
 
   glod.bindFramebuffer(null).bindTexture2D(null);
